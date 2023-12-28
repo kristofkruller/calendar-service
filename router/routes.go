@@ -30,7 +30,7 @@ func SetupRoutes(app *fiber.App, db *db.Client) {
 		return c.JSON(events)
 	})
 
-	events.Post("/:id", func(c *fiber.Ctx) error {
+	events.Post("/", func(c *fiber.Ctx) error {
 		event := new(models.Event)
 		if err := c.BodyParser(event); err != nil {
 			return c.Status(fiber.StatusBadRequest).SendString(err.Error())
