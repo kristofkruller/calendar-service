@@ -14,10 +14,19 @@ var DbClient *db.Client
 
 func InitFirebase() (*firebase.App, error) {
 	ctx := context.Background()
-	conf := &firebase.Config{
-		DatabaseURL: os.Getenv("FIREBASE_DATABASE_URL"),
+	url := os.Getenv("FIREBASE_DATABASE_URL")
+	if url == "" {
+		return nil, fmt.Errorf("error initializing firebase db url")
 	}
-	opt := option.WithCredentialsFile(os.Getenv("FIREBASE_CREDENTIALS_JSON"))
+	cred := os.Getenv("FIREBASE_CREDENTIALS_JSON")
+	if cred == "" {
+		return nil, fmt.Errorf("error initializing firebase cred json")
+	}
+
+	conf := &firebase.Config{
+		DatabaseURL: url,
+	}
+	opt := option.WithCredentialsFile(cred)
 
 	app, err := firebase.NewApp(ctx, conf, opt)
 	if err != nil {

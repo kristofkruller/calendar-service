@@ -1,6 +1,7 @@
 package app
 
 import (
+	"log"
 	"os"
 
 	"github.com/gofiber/fiber/v2"
@@ -12,30 +13,42 @@ import (
 )
 
 func SetupAndRun() error {
-	// load env
-	err := config.LoadENV()
-	if err != nil {
+	// Load environment variables
+	if err := config.LoadENV(); err != nil {
+		log.Printf("Error loading environment variables: %v\n", err)
 		return err
 	}
 
-	// db
-	calendardb.InitFirebase()
+	// Initialize the database
+	if _, err := calendardb.InitFirebase(); err != nil {
+		log.Printf("Error initializing Firebase: %v\n", err)
+		return err
+	}
 
-	// app
-	app := fiber.New()
+	// Create a new Fiber application
+	newApp := fiber.New()
 
-	// attach middleware
-	app.Use(recover.New())
-	app.Use(logger.New(logger.Config{
+	// Attach middleware
+	newApp.Use(recover.New())
+	newApp.Use(logger.New(logger.Config{
 		Format: "[${ip}]:${port} ${status} - ${method} ${path} ${latency}\n",
 	}))
 
-	// setup routes
-	router.SetupRoutes(app, calendardb.DbClient)
+	// Setup routes
+	router.SetupRoutes(newApp, calendardb.DbClient)
 
-	// get the port and start
+	// Get the port and start the application
 	port := os.Getenv("PORT")
-	app.Listen(":" + port)
+	if port == "" {
+		log.Println("Port not specified in the environment, defaulting to 3000")
+		port = "3000" // default port
+	}
 
+	if err := newApp.Listen(":" + port); err != nil {
+		log.Printf("Error starting the server on port %s: %v\n", port, err)
+		return err
+	}
+
+	log.Printf("Server started on port %s\n", port)
 	return nil
 }

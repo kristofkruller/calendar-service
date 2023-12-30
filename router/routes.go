@@ -19,7 +19,7 @@ func SetupRoutes(app *fiber.App, db *db.Client) {
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString(err.Error())
 		}
-		return c.JSON(event)
+		return c.Status(fiber.StatusOK).JSON(event)
 	})
 
 	events.Get("/", func(c *fiber.Ctx) error {
@@ -27,7 +27,10 @@ func SetupRoutes(app *fiber.App, db *db.Client) {
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString(err.Error())
 		}
-		return c.JSON(events)
+		if len(events) == 0 {
+			return c.Status(fiber.StatusOK).SendString("no events booked")
+		}
+		return c.Status(fiber.StatusOK).JSON(events)
 	})
 
 	events.Post("/", func(c *fiber.Ctx) error {
@@ -38,7 +41,7 @@ func SetupRoutes(app *fiber.App, db *db.Client) {
 		if err := handlers.SaveEvent(db, event); err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString(err.Error())
 		}
-		return c.JSON(event)
+		return c.Status(fiber.StatusCreated).JSON(event)
 	})
 
 	events.Delete("/:id", func(c *fiber.Ctx) error {
@@ -47,13 +50,13 @@ func SetupRoutes(app *fiber.App, db *db.Client) {
 			log.Printf("error in deleting ref for user %s: %v\n", eventId, err)
 			return c.Status(fiber.StatusInternalServerError).SendString(err.Error())
 		}
-		return c.SendString(fmt.Sprintf("Event's score with ID %s deleted successfully:)\n", eventId))
+		return c.Status(fiber.StatusOK).SendString(fmt.Sprintf("Event's score with ID %s deleted successfully\n", eventId))
 	})
 
 	events.Delete("/", func(c *fiber.Ctx) error {
 		if err := handlers.DeleteAllEvents(db); err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString(err.Error())
 		}
-		return nil
+		return c.Status(fiber.StatusOK).SendString("All events were deleted successfully")
 	})
 }
