@@ -38,6 +38,15 @@ func SetupRoutes(app *fiber.App, db *db.Client) {
 		if err := c.BodyParser(event); err != nil {
 			return c.Status(fiber.StatusBadRequest).SendString(err.Error())
 		}
+
+		isConflict, err := handlers.IsEventConflict(db, event)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).SendString(err.Error())
+		}
+		if isConflict {
+			return c.Status(fiber.StatusConflict).SendString(fmt.Sprintf("there is a conflict at beginning or end of event %v", event.Id))
+		}
+
 		if err := handlers.SaveEvent(db, event); err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString(err.Error())
 		}

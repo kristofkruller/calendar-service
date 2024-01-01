@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"reflect"
 	"strconv"
 
 	"firebase.google.com/go/v4/db"
@@ -33,16 +34,43 @@ func GetAllEvents(client *db.Client) (map[string]models.Event, error) {
 func SaveEvent(db *db.Client, event *models.Event) error {
 	ref := db.NewRef("events")
 
+	// CHECK TIME FIELDS FOR UTC
+	times := []string{event.CDate, event.Begin, event.End}
+	for _, t := range times {
+		parsedTime, err := ParseT(t)
+		if err != nil {
+			return fmt.Errorf("error parsing time: %v", err)
+		}
+		if isUTC, err := IsUTCTime(*parsedTime); err != nil || !isUTC {
+			if err != nil {
+				return fmt.Errorf("error checking UTC: %v", err)
+			}
+			return fmt.Errorf("UTC time needed for dates")
+		}
+	}
+
+	// CHECK FOR ALREADY EXISTING ONES
 	var exEvent models.Event
 	existingEventRef := ref.Child(strconv.Itoa(int(event.Id)))
 	if err := existingEventRef.Get(context.Background(), &exEvent); err != nil {
 		return fmt.Errorf("error checking for existing event: %v", err)
 	}
-
 	if exEvent.Id != 0 {
 		return fmt.Errorf("event with ID %d already exists", event.Id)
 	}
 
+	// RM WHITESPACE, SPEC, FORMATTING
+	v := reflect.ValueOf(event).Elem()
+	tOfStr := reflect.TypeOf("")
+	for i := 0; i < v.NumField(); i++ {
+		field := v.Field(i)
+		if field.Type() == tOfStr && field.CanSet() {
+			cleaned := CleanString(field.String())
+			field.SetString(cleaned)
+		}
+	}
+
+	// RETURN SET
 	if err := existingEventRef.Set(context.Background(), event); err != nil {
 		return fmt.Errorf("error saving event: %v", err)
 	}
