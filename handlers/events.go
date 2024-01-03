@@ -15,7 +15,7 @@ func GetOneEvent(client *db.Client, eventId string) (*models.Event, error) {
 	ref := client.NewRef("events/" + eventId)
 	var event models.Event
 	if err := ref.Get(context.Background(), &event); err != nil {
-		log.Printf("Error gettng event: %v\n %s", err, eventId)
+		log.Printf("Error getting event: %v\n %s", err, eventId)
 		return nil, err
 	}
 	return &event, nil
@@ -35,9 +35,14 @@ func SaveEvent(db *db.Client, event *models.Event) error {
 	ref := db.NewRef("events")
 
 	// CHECK TIME FIELDS FOR UTC
-	times := []string{event.CDate, event.Begin, event.End}
+	times := map[string]*string{
+		"CDate": &event.CDate,
+		"Begin": &event.Begin,
+		"End":   &event.End,
+	}
+
 	for _, t := range times {
-		parsedTime, err := ParseT(t)
+		parsedTime, err := ParseT(*t)
 		if err != nil {
 			return fmt.Errorf("error parsing time: %v", err)
 		}
@@ -65,8 +70,12 @@ func SaveEvent(db *db.Client, event *models.Event) error {
 	for i := 0; i < v.NumField(); i++ {
 		field := v.Field(i)
 		if field.Type() == tOfStr && field.CanSet() {
-			cleaned := CleanString(field.String())
-			field.SetString(cleaned)
+			// Check if date
+			fieldName := v.Type().Field(i).Name
+			if fieldName != "CDate" && fieldName != "Begin" && fieldName != "End" {
+				cleaned := CleanString(field.String())
+				field.SetString(cleaned)
+			}
 		}
 	}
 
