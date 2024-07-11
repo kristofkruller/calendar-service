@@ -1,4 +1,4 @@
-package app
+package main
 
 import (
 	"log"
@@ -7,9 +7,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/fiber/v2/middleware/recover"
-	"github.com/kristofkruller/calendar-service/calendardb"
 	"github.com/kristofkruller/calendar-service/config"
-	"github.com/kristofkruller/calendar-service/router"
 )
 
 func SetupAndRun() error {
@@ -20,7 +18,7 @@ func SetupAndRun() error {
 	}
 
 	// Initialize the database
-	if _, err := calendardb.InitFirebase(); err != nil {
+	if _, err := config.InitFirebase(); err != nil {
 		log.Printf("Error initializing Firebase: %v\n", err)
 		return err
 	}
@@ -35,7 +33,7 @@ func SetupAndRun() error {
 	}))
 
 	// Setup routes
-	router.SetupRoutes(newApp, calendardb.DbClient)
+	SetupRoutes(newApp, config.DbClient)
 
 	// Get the port and start the application
 	port := os.Getenv("PORT")

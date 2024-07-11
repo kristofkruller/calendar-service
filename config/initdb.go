@@ -1,4 +1,4 @@
-package calendardb
+package config
 
 import (
 	"context"

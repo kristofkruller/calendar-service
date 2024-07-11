@@ -24,3 +24,6 @@ go.work
 # env
 .env*
 *.env
+
+# firebase cred
+cred/*
